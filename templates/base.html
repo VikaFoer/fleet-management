@@ -260,14 +260,14 @@
                         {% endif %}
                     {% endwith %}
                     
-                    {% block content %}{% endblock %}
+                    {% block main_content %}{% endblock %}
                 </div>
             </main>
         </div>
     </div>
     {% else %}
     <div class="container">
-        {% block content %}{% endblock %}
+        {% block auth_content %}{% endblock %}
     </div>
     {% endif %}
     

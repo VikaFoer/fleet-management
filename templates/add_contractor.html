@@ -3,7 +3,7 @@
 {% block title %}Добавить контрагента - Автопарк{% endblock %}
 {% block page_title %}Добавить контрагента{% endblock %}
 
-{% block content %}
+{% block main_content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card shadow">
@@ -48,15 +48,15 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="location" class="form-label">Геолокация</label>
+                            <label for="location" class="form-label">Геолокація</label>
                             <input type="text" class="form-control" id="location" name="location" 
-                                   placeholder="г. Москва, ул. Примерная, д. 1">
+                                   placeholder="м. Київ, вул. Прикладна, 1">
                         </div>
                     </div>
                     
                     <div class="row">
                         <div class="col-12 mb-3">
-                            <label for="notes" class="form-label">Примечания</label>
+                            <label for="notes" class="form-label">Примітки</label>
                             <textarea class="form-control" id="notes" name="notes" rows="3" 
                                       placeholder="Дополнительная информация о контрагенте..."></textarea>
                         </div>
@@ -67,7 +67,7 @@
                             <i class="fas fa-arrow-left me-2"></i>Назад
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Сохранить
+                            <i class="fas fa-save me-2"></i>Зберегти
                         </button>
                     </div>
                 </form>
