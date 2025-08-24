@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Денежные потоки - Автопарк{% endblock %}
+{% block page_title %}Денежные потоки{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-money-bill-wave me-2"></i>Денежные потоки
+        </h6>
+        <a href="{{ url_for('add_cashflow') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Добавить запись
+        </a>
+    </div>
+    <div class="card-body">
+        {% if cashflow_entries %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Надходження</th>
+                            <th>Видатки</th>
+                            <th>Кредитне навантаження</th>
+                            <th>Сальдо</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in cashflow_entries %}
+                        <tr>
+                            <td>{{ entry.date.strftime('%d.%m.%Y') }}</td>
+                            <td>
+                                {% if entry.income > 0 %}
+                                    <span class="text-success fw-bold">{{ "%.2f"|format(entry.income) }} ₽</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 ₽</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.expenses > 0 %}
+                                    <span class="text-danger fw-bold">{{ "%.2f"|format(entry.expenses) }} ₽</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 ₽</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.credit_load > 0 %}
+                                    <span class="text-warning fw-bold">{{ "%.2f"|format(entry.credit_load) }} ₽</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 ₽</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entry.balance > 0 %}
+                                    <span class="text-success fw-bold">{{ "%.2f"|format(entry.balance) }} ₽</span>
+                                {% elif entry.balance < 0 %}
+                                    <span class="text-danger fw-bold">{{ "%.2f"|format(entry.balance) }} ₽</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 ₽</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" data-bs-target="#cashflowModal{{ entry.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="#" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Modal для детальной информации -->
+                        <div class="modal fade" id="cashflowModal{{ entry.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Денежный поток: {{ entry.date.strftime('%d.%m.%Y') }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <table class="table table-sm">
+                                            <tr><td><strong>Дата:</strong></td><td>{{ entry.date.strftime('%d.%m.%Y') }}</td></tr>
+                                            <tr><td><strong>Надходження:</strong></td><td>{{ "%.2f"|format(entry.income) }} ₽</td></tr>
+                                            <tr><td><strong>Видатки:</strong></td><td>{{ "%.2f"|format(entry.expenses) }} ₽</td></tr>
+                                            <tr><td><strong>Кредитне навантаження:</strong></td><td>{{ "%.2f"|format(entry.credit_load) }} ₽</td></tr>
+                                            <tr><td><strong>Сальдо:</strong></td><td>{{ "%.2f"|format(entry.balance) }} ₽</td></tr>
+                                        </table>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Нет записей о денежных потоках</h5>
+                <p class="text-muted">Добавьте первую запись для начала работы</p>
+                <a href="{{ url_for('add_cashflow') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Добавить запись
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- График денежных потоков -->
+{% if cashflow_entries %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-line me-2"></i>График денежных потоков
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="cashflowChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// График денежных потоков
+const cashflowCtx = document.getElementById('cashflowChart').getContext('2d');
+const cashflowChart = new Chart(cashflowCtx, {
+    type: 'line',
+    data: {
+        labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+        datasets: [{
+            label: 'Надходження',
+            data: [65, 59, 80, 81, 56, 55],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            fill: true
+        }, {
+            label: 'Видатки',
+            data: [28, 48, 40, 19, 86, 27],
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            fill: true
+        }, {
+            label: 'Сальдо',
+            data: [37, 11, 40, 62, -30, 28],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %} 

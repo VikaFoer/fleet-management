@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить денежный поток - Автопарк{% endblock %}
+{% block page_title %}Добавить денежный поток{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-plus me-2"></i>Новая запись денежного потока
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Дата *</label>
+                            <input type="date" class="form-control" id="date" name="date" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="income" class="form-label">Надходження (₽)</label>
+                            <input type="number" class="form-control" id="income" name="income" 
+                                   step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="expenses" class="form-label">Видатки (₽)</label>
+                            <input type="number" class="form-control" id="expenses" name="expenses" 
+                                   step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="credit_load" class="form-label">Кредитне навантаження (₽)</label>
+                            <input type="number" class="form-control" id="credit_load" name="credit_load" 
+                                   step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="alert alert-info">
+                                <strong>Сальдо будет рассчитано автоматически:</strong> Надходження - Видатки - Кредитне навантаження
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('cashflow') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Установка текущей даты по умолчанию
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
+});
+
+// Автоматический расчет сальдо
+function calculateBalance() {
+    const income = parseFloat(document.getElementById('income').value) || 0;
+    const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+    const creditLoad = parseFloat(document.getElementById('credit_load').value) || 0;
+    
+    const balance = income - expenses - creditLoad;
+    
+    // Можно добавить отображение предварительного расчета
+    console.log('Предварительное сальдо:', balance);
+}
+
+// Добавляем слушатели для автоматического расчета
+document.getElementById('income').addEventListener('input', calculateBalance);
+document.getElementById('expenses').addEventListener('input', calculateBalance);
+document.getElementById('credit_load').addEventListener('input', calculateBalance);
+</script>
+{% endblock %} 

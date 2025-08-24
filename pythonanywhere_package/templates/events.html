@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Журнал подій - Автопарк{% endblock %}
+{% block page_title %}Журнал подій{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-calendar-alt me-2"></i>Журнал подій
+        </h6>
+        <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Додати подію
+        </a>
+    </div>
+    <div class="card-body">
+        {% if events %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Підтип</th>
+                            <th>ТЗ</th>
+                            <th>Контрагент</th>
+                            <th>Сума</th>
+                            <th>Опис</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr>
+                            <td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ event.event_type }}</span>
+                            </td>
+                            <td>{{ event.subtype }}</td>
+                            <td>
+                                {% if event.vehicle %}
+                                    <strong>{{ event.vehicle.call_sign }}</strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.contractor %}
+                                    {{ event.contractor.name }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.amount > 0 %}
+                                    <span class="text-success fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
+                                {% elif event.amount < 0 %}
+                                    <span class="text-danger fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 ₴</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.description %}
+                                    {{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" data-bs-target="#eventModal{{ event.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="#" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Modal для детальной информации -->
+                        <div class="modal fade" id="eventModal{{ event.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Событие: {{ event.event_type }} - {{ event.subtype }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Основная информация</h6>
+                                                <table class="table table-sm">
+                                                    <tr><td><strong>Дата:</strong></td><td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td></tr>
+                                                    <tr><td><strong>Тип:</strong></td><td>{{ event.event_type }}</td></tr>
+                                                    <tr><td><strong>Подтип:</strong></td><td>{{ event.subtype }}</td></tr>
+                                                    <tr><td><strong>Сумма:</strong></td><td>{{ "%.2f"|format(event.amount) }} ₽</td></tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Связанные объекты</h6>
+                                                <table class="table table-sm">
+                                                    <tr><td><strong>ТС:</strong></td>
+                                                        <td>
+                                                            {% if event.vehicle %}
+                                                                {{ event.vehicle.call_sign }} ({{ event.vehicle.brand }} {{ event.vehicle.model }})
+                                                            {% else %}
+                                                                <span class="text-muted">Не указано</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr><td><strong>Контрагент:</strong></td>
+                                                        <td>
+                                                            {% if event.contractor %}
+                                                                {{ event.contractor.name }} ({{ event.contractor.contractor_type }})
+                                                            {% else %}
+                                                                <span class="text-muted">Не указано</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% if event.description %}
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                                <h6>Описание</h6>
+                                                <p>{{ event.description }}</p>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Нет событий</h5>
+                <p class="text-muted">Добавьте первое событие для начала работы</p>
+                <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Добавить событие
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

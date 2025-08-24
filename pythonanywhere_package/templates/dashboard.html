@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления - Автопарк{% endblock %}
+{% block page_title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Статистика -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Всего ТС
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_vehicles }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-car fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Активные ТС
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_vehicles }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Події сьогодні
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ recent_events|length if recent_events else 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Контрагенти
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ contractors|length if contractors else 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Последние события -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-calendar-alt me-2"></i>Останні події
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if latest_events %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Тип</th>
+                                    <th>Підтип</th>
+                                    <th>ТЗ</th>
+                                    <th>Контрагент</th>
+                                    <th>Сума</th>
+                                    <th>Опис</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in latest_events %}
+                                <tr>
+                                    <td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ event.event_type }}</span>
+                                    </td>
+                                    <td>{{ event.subtype }}</td>
+                                    <td>
+                                        {% if event.vehicle %}
+                                            <strong>{{ event.vehicle.call_sign }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.contractor %}
+                                            {{ event.contractor.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.amount > 0 %}
+                                            <span class="text-success fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
+                                        {% elif event.amount < 0 %}
+                                            <span class="text-danger fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
+                                        {% else %}
+                                            <span class="text-muted">0.00 ₴</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.description %}
+                                            {{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Нет событий</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые действия -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-bolt me-2"></i>Быстрые действия
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_vehicle') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus me-2"></i>Добавить ТС
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_event') }}" class="btn btn-success w-100">
+                            <i class="fas fa-calendar-plus me-2"></i>Добавить событие
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_contractor') }}" class="btn btn-info w-100">
+                            <i class="fas fa-user-plus me-2"></i>Добавить контрагента
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('add_cashflow') }}" class="btn btn-warning w-100">
+                            <i class="fas fa-money-bill-wave me-2"></i>Добавить денежный поток
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика по типам событий -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-pie me-2"></i>Статистика по типам событий
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="eventsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-line me-2"></i>Финансовая статистика
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="financeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// График событий
+const eventsCtx = document.getElementById('eventsChart').getContext('2d');
+const eventsChart = new Chart(eventsCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Інвестиції', 'Видатки', 'Надходження', 'Державні'],
+        datasets: [{
+            data: [12, 19, 8, 5],
+            backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// График финансов
+const financeCtx = document.getElementById('financeChart').getContext('2d');
+const financeChart = new Chart(financeCtx, {
+    type: 'line',
+    data: {
+        labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+        datasets: [{
+            label: 'Надходження',
+            data: [65, 59, 80, 81, 56, 55],
+            borderColor: '#36A2EB',
+            fill: false
+        }, {
+            label: 'Видатки',
+            data: [28, 48, 40, 19, 86, 27],
+            borderColor: '#FF6384',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %} 

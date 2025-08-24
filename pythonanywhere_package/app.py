@@ -16,29 +16,13 @@ import json
 load_dotenv()
 
 app = Flask(__name__)
-
-# Настройка SECRET_KEY
-secret_key = os.getenv('SECRET_KEY')
-if not secret_key:
-    # Генерируем SECRET_KEY если его нет
-    import secrets
-    secret_key = secrets.token_hex(32)
-    print(f"Generated SECRET_KEY: {secret_key[:16]}...")
-app.config['SECRET_KEY'] = secret_key
-
-# Настройка базы данных
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 database_url = os.getenv('DATABASE_URL')
 print(f"Database URL from env: {database_url}")
-
-# Для Railway PostgreSQL
-if database_url and database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-if database_url and (database_url.startswith('sqlite://') or database_url.startswith('postgresql://') or database_url.startswith('mysql://')):
+if database_url and database_url.startswith('sqlite://') or database_url.startswith('postgresql://') or database_url.startswith('mysql://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fleet.db'
-
 print(f"Final Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -201,17 +185,19 @@ def index():
 
 @app.route('/health')
 def health_check():
-    return jsonify({
-        'status': 'healthy', 
-        'timestamp': datetime.utcnow(),
-        'message': 'Application is running'
-    })
-
-@app.route('/')
-def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')
+    try:
+        # Простая проверка без базы данных
+        return jsonify({
+            'status': 'healthy', 
+            'timestamp': datetime.utcnow(),
+            'message': 'Application is running'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.utcnow()
+        }), 500
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -639,6 +625,27 @@ def generate_cashflow_report(cashflow_entries):
     return send_file(buffer, as_attachment=True, download_name='cashflow_report.pdf')
 
 if __name__ == '__main__':
+    # Инициализируем базу данных
+    with app.app_context():
+        try:
+            db.create_all()
+            
+            # Создаем администратора по умолчанию
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@fleet.com',
+                    password_hash=generate_password_hash('admin123'),
+                    role='admin'
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Администратор создан: admin/admin123")
+        except Exception as e:
+            print(f"❌ Ошибка инициализации БД: {e}")
+            db.session.rollback()
+    
     # Для локальной разработки
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
