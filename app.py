@@ -47,6 +47,31 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# Автоматическая инициализация базы данных
+def init_database():
+    with app.app_context():
+        try:
+            db.create_all()
+            
+            # Создаем администратора по умолчанию
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@fleet.com',
+                    password_hash=generate_password_hash('admin123'),
+                    role='admin'
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ База данных инициализирована")
+        except Exception as e:
+            print(f"❌ Ошибка инициализации БД: {e}")
+            db.session.rollback()
+
+# Инициализируем БД при запуске
+init_database()
+
 # Модели данных
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -195,9 +220,13 @@ CONTRACTOR_TYPES = [
 # Маршруты
 @app.route('/')
 def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')
+    try:
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        return render_template('index.html')
+    except Exception as e:
+        print(f"Error in index route: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/health')
 def health_check():
