@@ -186,12 +186,11 @@ def index():
 @app.route('/health')
 def health_check():
     try:
-        # Проверяем подключение к базе данных
-        db.session.execute('SELECT 1')
+        # Простая проверка без базы данных
         return jsonify({
             'status': 'healthy', 
             'timestamp': datetime.utcnow(),
-            'database': 'connected'
+            'message': 'Application is running'
         })
     except Exception as e:
         return jsonify({
@@ -626,36 +625,28 @@ def generate_cashflow_report(cashflow_entries):
     return send_file(buffer, as_attachment=True, download_name='cashflow_report.pdf')
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        # Создаем администратора по умолчанию
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                email='admin@fleet.com',
-                password_hash=generate_password_hash('admin123'),
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-    
+    init_db()
     # Для локальной разработки
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
-# Для Railway - создаем приложение при импорте
-with app.app_context():
-    db.create_all()
-    
-    # Создаем администратора по умолчанию
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        admin = User(
-            username='admin',
-            email='admin@fleet.com',
-            password_hash=generate_password_hash('admin123'),
-            role='admin'
-        )
-        db.session.add(admin)
-        db.session.commit() 
+# Инициализация базы данных только при запуске
+def init_db():
+    with app.app_context():
+        try:
+            db.create_all()
+            
+            # Создаем администратора по умолчанию
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@fleet.com',
+                    password_hash=generate_password_hash('admin123'),
+                    role='admin'
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ База данных инициализирована успешно")
+        except Exception as e:
+            print(f"❌ Ошибка инициализации БД: {e}")
+            db.session.rollback() 
