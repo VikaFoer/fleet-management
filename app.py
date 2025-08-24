@@ -78,9 +78,13 @@ def init_database():
             db.session.rollback()
             # Не прерываем работу приложения при ошибке БД
 
+# Флаг для отслеживания инициализации БД
+db_initialized = False
+
 # Инициализируем БД при запуске (только если это не Railway)
 if not os.getenv('RAILWAY_ENVIRONMENT'):
     init_database()
+    db_initialized = True
 
 # Модели данных
 class User(UserMixin, db.Model):
@@ -230,6 +234,17 @@ CONTRACTOR_TYPES = [
 # Маршруты
 @app.route('/')
 def index():
+    global db_initialized
+    
+    # Автоматическая инициализация БД при первом запросе
+    if not db_initialized:
+        try:
+            init_database()
+            db_initialized = True
+            print("✅ База данных инициализирована при первом запросе")
+        except Exception as e:
+            print(f"❌ Ошибка инициализации БД: {e}")
+    
     try:
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
@@ -245,6 +260,21 @@ def health_check():
         'timestamp': datetime.utcnow(),
         'message': 'Application is running'
     })
+
+@app.route('/init-db')
+def init_db_route():
+    """Маршрут для инициализации базы данных"""
+    try:
+        init_database()
+        return jsonify({
+            'status': 'success',
+            'message': 'База данных инициализирована успешно'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Ошибка инициализации: {str(e)}'
+        }), 500
 
 @app.errorhandler(500)
 def internal_error(error):
