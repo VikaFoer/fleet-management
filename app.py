@@ -207,12 +207,6 @@ def health_check():
         'message': 'Application is running'
     })
 
-@app.route('/')
-def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')
-
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
