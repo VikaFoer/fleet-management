@@ -185,7 +185,29 @@ def index():
 
 @app.route('/health')
 def health_check():
-    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow()})
+    try:
+        # Проверяем подключение к базе данных
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy', 
+            'timestamp': datetime.utcnow(),
+            'database': 'connected'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.utcnow()
+        }), 500
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return jsonify({'error': 'Internal server error'}), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Not found'}), 404
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -620,4 +642,20 @@ if __name__ == '__main__':
             db.session.commit()
     
     # Для локальной разработки
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+# Для Railway - создаем приложение при импорте
+with app.app_context():
+    db.create_all()
+    
+    # Создаем администратора по умолчанию
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin = User(
+            username='admin',
+            email='admin@fleet.com',
+            password_hash=generate_password_hash('admin123'),
+            role='admin'
+        )
+        db.session.add(admin)
+        db.session.commit() 
