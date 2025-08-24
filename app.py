@@ -51,9 +51,12 @@ login_manager.login_view = 'login'
 def init_database():
     with app.app_context():
         try:
+            print("🗄️ Создаем таблицы базы данных...")
             db.create_all()
+            print("✅ Таблицы созданы успешно")
             
             # Создаем администратора по умолчанию
+            print("👤 Проверяем администратора...")
             admin = User.query.filter_by(username='admin').first()
             if not admin:
                 admin = User(
@@ -64,13 +67,20 @@ def init_database():
                 )
                 db.session.add(admin)
                 db.session.commit()
-                print("✅ База данных инициализирована")
+                print("✅ Администратор создан: admin/admin123")
+            else:
+                print("ℹ️ Администратор уже существует")
+                
+            print("🎉 База данных инициализирована успешно!")
+            
         except Exception as e:
             print(f"❌ Ошибка инициализации БД: {e}")
             db.session.rollback()
+            # Не прерываем работу приложения при ошибке БД
 
-# Инициализируем БД при запуске
-init_database()
+# Инициализируем БД при запуске (только если это не Railway)
+if not os.getenv('RAILWAY_ENVIRONMENT'):
+    init_database()
 
 # Модели данных
 class User(UserMixin, db.Model):
@@ -248,15 +258,19 @@ def not_found_error(error):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        
-        if user and check_password_hash(user.password_hash, password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Невірне ім\'я користувача або пароль', 'error')
+        try:
+            username = request.form['username']
+            password = request.form['password']
+            user = User.query.filter_by(username=username).first()
+            
+            if user and check_password_hash(user.password_hash, password):
+                login_user(user)
+                return redirect(url_for('dashboard'))
+            else:
+                flash('Невірне ім\'я користувача або пароль', 'error')
+        except Exception as e:
+            print(f"Ошибка при входе: {e}")
+            flash('Помилка підключення до бази даних. Спробуйте пізніше.', 'error')
     
     return render_template('login.html')
 
