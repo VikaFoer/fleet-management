@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить событие - Автопарк{% endblock %}
+{% block page_title %}Добавить событие{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-plus me-2"></i>Новое событие
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Дата события *</label>
+                            <input type="datetime-local" class="form-control" id="date" name="date" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="event_type" class="form-label">Тип события *</label>
+                            <select class="form-select" id="event_type" name="event_type" required>
+                                <option value="">Выберите тип</option>
+                                {% for event_type in event_types %}
+                                    <option value="{{ event_type }}">{{ event_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="subtype" class="form-label">Подтип события *</label>
+                            <select class="form-select" id="subtype" name="subtype" required>
+                                <option value="">Сначала выберите тип</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="amount" class="form-label">Сумма (₽)</label>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="vehicle_id" class="form-label">Транспортное средство</label>
+                            <select class="form-select" id="vehicle_id" name="vehicle_id">
+                                <option value="">Выберите ТС (необязательно)</option>
+                                {% for vehicle in vehicles %}
+                                    <option value="{{ vehicle.id }}">{{ vehicle.call_sign }} - {{ vehicle.brand }} {{ vehicle.model }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="contractor_id" class="form-label">Контрагент</label>
+                            <select class="form-select" id="contractor_id" name="contractor_id">
+                                <option value="">Выберите контрагента (необязательно)</option>
+                                {% for contractor in contractors %}
+                                    <option value="{{ contractor.id }}">{{ contractor.name }} ({{ contractor.contractor_type }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Описание</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="Подробное описание события..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('events') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Установка текущей даты и времени по умолчанию
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    document.getElementById('date').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+});
+
+// Динамическое обновление подтипов событий
+const eventSubtypes = JSON.parse('{{ event_subtypes|tojson|safe }}');
+
+document.getElementById('event_type').addEventListener('change', function() {
+    const subtypeSelect = document.getElementById('subtype');
+    const selectedType = this.value;
+    
+    // Очищаем текущие опции
+    subtypeSelect.innerHTML = '<option value="">Выберите подтип</option>';
+    
+    if (selectedType && eventSubtypes[selectedType]) {
+        eventSubtypes[selectedType].forEach(subtype => {
+            const option = document.createElement('option');
+            option.value = subtype;
+            option.textContent = subtype;
+            subtypeSelect.appendChild(option);
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Документы - Автопарк{% endblock %}
+{% block page_title %}Генерация документов{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-car me-2"></i>Отчет по ТС
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Генерирует полный отчет по всем транспортным средствам в автопарке с основной информацией.</p>
+                <a href="{{ url_for('generate_report', report_type='vehicles') }}" class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Скачать PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-calendar-alt me-2"></i>Отчет по событиям
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Создает отчет по всем событиям из журнала с детальной информацией.</p>
+                <a href="{{ url_for('generate_report', report_type='events') }}" class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Скачать PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-money-bill-wave me-2"></i>Отчет по денежным потокам
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Формирует отчет по денежным потокам с финансовой статистикой.</p>
+                <a href="{{ url_for('generate_report', report_type='cashflow') }}" class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Скачать PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-file-alt me-2"></i>Шаблоны документов
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Доступные шаблоны:</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Договор аренды ТС</strong>
+                                    <br><small class="text-muted">Шаблон договора аренды транспортного средства</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">DOCX</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Акт приема-передачи</strong>
+                                    <br><small class="text-muted">Акт приема-передачи транспортного средства</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">DOCX</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Справка о ТС</strong>
+                                    <br><small class="text-muted">Справка о техническом состоянии</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">DOCX</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Финансовый отчет</strong>
+                                    <br><small class="text-muted">Отчет по финансовым показателям</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">DOCX</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Быстрые действия:</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" type="button">
+                                <i class="fas fa-upload me-2"></i>Загрузить новый шаблон
+                            </button>
+                            <button class="btn btn-outline-success" type="button">
+                                <i class="fas fa-edit me-2"></i>Редактировать шаблон
+                            </button>
+                            <button class="btn btn-outline-info" type="button">
+                                <i class="fas fa-cog me-2"></i>Настройки документов
+                            </button>
+                            <button class="btn btn-outline-warning" type="button">
+                                <i class="fas fa-sync me-2"></i>Обновить шаблоны
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>История документов
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Дата создания</th>
+                                <th>Тип документа</th>
+                                <th>Название</th>
+                                <th>Размер</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>01.12.2024</td>
+                                <td>Отчет</td>
+                                <td>vehicles_report.pdf</td>
+                                <td>245 KB</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>30.11.2024</td>
+                                <td>Отчет</td>
+                                <td>events_report.pdf</td>
+                                <td>189 KB</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>29.11.2024</td>
+                                <td>Отчет</td>
+                                <td>cashflow_report.pdf</td>
+                                <td>156 KB</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

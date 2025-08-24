@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Події контрагента - Автопарк{% endblock %}
+{% block page_title %}Події контрагента{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-calendar-alt me-2"></i>Події контрагента: {{ contractor.name }}
+        </h6>
+        <div>
+            <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Додати подію
+            </a>
+            <a href="{{ url_for('contractors') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Назад до контрагентів
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Информация о контрагенте -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6 class="text-primary">Інформація про контрагента</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Назва:</strong></td><td>{{ contractor.name }}</td></tr>
+                    <tr><td><strong>Тип:</strong></td><td>{{ contractor.contractor_type }}</td></tr>
+                    <tr><td><strong>Підтип:</strong></td><td>{{ contractor.subtype or '-' }}</td></tr>
+                    <tr><td><strong>Телефон:</strong></td><td>{{ contractor.phone or '-' }}</td></tr>
+                    <tr><td><strong>Розташування:</strong></td><td>{{ contractor.location or '-' }}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-primary">Статистика</h6>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h4>{{ events|length }}</h4>
+                                <small>Всього подій</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h4>{{ "%.2f"|format(events|selectattr('amount', 'gt', 0)|sum(attribute='amount')) }} ₴</h4>
+                                <small>Загальна сума</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if events %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Підтип</th>
+                            <th>ТЗ</th>
+                            <th>Сума</th>
+                            <th>Опис</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr>
+                            <td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ event.event_type }}</span>
+                            </td>
+                            <td>{{ event.subtype }}</td>
+                            <td>
+                                {% if event.vehicle %}
+                                    <strong>{{ event.vehicle.call_sign }}</strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.amount > 0 %}
+                                    <span class="text-success fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
+                                {% elif event.amount < 0 %}
+                                    <span class="text-danger fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 ₴</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.description %}
+                                    {{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" data-bs-target="#eventModal{{ event.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="#" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('delete_event', event_id=event.id) }}" 
+                                          style="display: inline;" onsubmit="return confirm('Ви впевнені, що хочете видалити цю подію?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Modal для детальной информации -->
+                        <div class="modal fade" id="eventModal{{ event.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Подія: {{ event.event_type }} - {{ event.subtype }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Основна інформація</h6>
+                                                <table class="table table-sm">
+                                                    <tr><td><strong>Дата:</strong></td><td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td></tr>
+                                                    <tr><td><strong>Тип:</strong></td><td>{{ event.event_type }}</td></tr>
+                                                    <tr><td><strong>Підтип:</strong></td><td>{{ event.subtype }}</td></tr>
+                                                    <tr><td><strong>Сума:</strong></td><td>{{ "%.2f"|format(event.amount) }} ₴</td></tr>
+                                                </table>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Деталі</h6>
+                                                <table class="table table-sm">
+                                                    <tr><td><strong>ТЗ:</strong></td><td>{{ event.vehicle.call_sign if event.vehicle else '-' }}</td></tr>
+                                                    <tr><td><strong>Контрагент:</strong></td><td>{{ event.contractor.name if event.contractor else '-' }}</td></tr>
+                                                    <tr><td><strong>Створено:</strong></td><td>{{ event.created_at.strftime('%d.%m.%Y %H:%M') }}</td></tr>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        {% if event.description %}
+                                        <div class="mt-3">
+                                            <h6>Опис</h6>
+                                            <p>{{ event.description }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Немає подій для цього контрагента</h5>
+                <p class="text-muted">Додайте першу подію, щоб почати вести історію</p>
+                <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Додати подію
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

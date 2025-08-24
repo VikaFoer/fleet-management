@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Добавить контрагента - Автопарк{% endblock %}
+{% block page_title %}Добавить контрагента{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-plus me-2"></i>Новый контрагент
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contractor_type" class="form-label">Тип контрагента *</label>
+                            <select class="form-select" id="contractor_type" name="contractor_type" required>
+                                <option value="">Выберите тип</option>
+                                {% for contractor_type in contractor_types %}
+                                    <option value="{{ contractor_type }}">{{ contractor_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="subtype" class="form-label">Подтип</label>
+                            <input type="text" class="form-control" id="subtype" name="subtype" 
+                                   placeholder="Описание подтипа">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Наименование *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="ООО Компания" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Телефон</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   placeholder="+7 (999) 123-45-67">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">Геолокация</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   placeholder="г. Москва, ул. Примерная, д. 1">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label for="notes" class="form-label">Примечания</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="Дополнительная информация о контрагенте..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('contractors') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Автоматическое форматирование телефона
+document.getElementById('phone').addEventListener('input', function(e) {
+    let value = this.value.replace(/\D/g, '');
+    if (value.length > 0) {
+        if (value.length <= 3) {
+            value = `+7 (${value}`;
+        } else if (value.length <= 6) {
+            value = `+7 (${value.slice(0, 3)}) ${value.slice(3)}`;
+        } else if (value.length <= 8) {
+            value = `+7 (${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+        } else {
+            value = `+7 (${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 8)}-${value.slice(8, 10)}`;
+        }
+    }
+    this.value = value;
+});
+</script>
+{% endblock %} 
