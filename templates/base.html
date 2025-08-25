@@ -92,6 +92,14 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications') }}">
+                                <i class="fas fa-bell me-2"></i> Вхідні
+                                {% if unread_notifications and unread_notifications > 0 %}
+                                    <span class="badge bg-danger ms-2">{{ unread_notifications }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'contractors' %}active{% endif %}" href="{{ url_for('contractors') }}">
                                 <i class="fas fa-users me-2"></i> Контрагенти
                             </a>

@@ -42,7 +42,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="phone" class="form-label">Телефон</label>
                             <input type="tel" class="form-control" id="phone" name="phone" 
-                                   placeholder="+38 (097) 737-70-90">
+                                   placeholder="+38 ">
                         </div>
                     </div>
                     
@@ -75,23 +75,55 @@
         </div>
     </div>
 </div>
+<input
+  id="phone"
+  type="tel"
+  inputmode="numeric"
+  autocomplete="tel"
+  placeholder="+38 (___) ___-__-__"
+/>
 
 <script>
-// Автоматическое форматирование телефона
-document.getElementById('phone').addEventListener('input', function(e) {
-    let value = this.value.replace(/\D/g, '');
-    if (value.length > 0) {
-        if (value.length <= 3) {
-            value = `+7 (${value}`;
-        } else if (value.length <= 6) {
-            value = `+7 (${value.slice(0, 3)}) ${value.slice(3)}`;
-        } else if (value.length <= 8) {
-            value = `+7 (${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
-        } else {
-            value = `+7 (${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 8)}-${value.slice(8, 10)}`;
-        }
+(function() {
+  const el = document.getElementById('phone');
+
+  function getDigits(str) {
+    return str.replace(/\D/g, '');
+  }
+
+  function formatUA(digits) {
+    // Убираем возможный код страны, если уже ввели 380
+    if (digits.startsWith('38')) {
+      digits = digits.slice(2);
     }
-    this.value = value;
-});
+    const d = digits.slice(0, 10); // максимум 10 цифр после +38
+    const a = d.slice(0, 3);
+    const b = d.slice(3, 6);
+    const c = d.slice(6, 8);
+    const e = d.slice(8, 10);
+
+    let out = '+38';
+    if (a) out += ` (${a}`;
+    if (d.length >= 3) out += ')';
+    if (b) out += ` ${b}`;
+    if (c) out += `-${c}`;
+    if (e) out += `-${e}`;
+    return out;
+  }
+
+  el.addEventListener('input', function() {
+    const digits = getDigits(this.value);
+    this.value = formatUA(digits);
+  });
+
+  el.addEventListener('focus', function() {
+    if (!this.value) this.value = '+38 ';
+  });
+
+  el.addEventListener('blur', function() {
+    if (getDigits(this.value).length <= 2) this.value = ''; // если нет цифр кроме кода
+  });
+})();
 </script>
+
 {% endblock %} 

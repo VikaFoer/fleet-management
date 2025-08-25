@@ -111,6 +111,22 @@ class EventJournal(db.Model):
     contractor = db.relationship('Contractor', backref='events')
     user = db.relationship('User', backref='events')
 
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(50), nullable=False)  # 'insurance' или 'rental_payment'
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'))
+    contractor_id = db.Column(db.Integer, db.ForeignKey('contractor.id'))
+    due_date = db.Column(db.Date, nullable=False)  # Дата, когда должно произойти событие
+    amount = db.Column(db.Float, default=0)  # Сумма для платежа
+    is_read = db.Column(db.Boolean, default=False)
+    is_processed = db.Column(db.Boolean, default=False)  # Обработано ли уведомление
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    vehicle = db.relationship('Vehicle', backref='notifications')
+    contractor = db.relationship('Contractor', backref='notifications')
+
 # Автоматическая инициализация базы данных
 def init_database():
     with app.app_context():
@@ -150,6 +166,22 @@ if not os.getenv('RAILWAY_ENVIRONMENT'):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+@app.context_processor
+def inject_unread_notifications():
+    """Добавляет количество непрочитанных уведомлений во все шаблоны"""
+    if current_user.is_authenticated:
+        unread_count = Notification.query.filter_by(is_read=False).count()
+        return {
+            'unread_notifications': unread_count,
+            'timedelta': timedelta,
+            'now': datetime.now()
+        }
+    return {
+        'unread_notifications': 0,
+        'timedelta': timedelta,
+        'now': datetime.now()
+    }
 
 # Константы для типов событий
 EVENT_TYPES = [
@@ -229,6 +261,78 @@ CONTRACTOR_TYPES = [
     'Постачальник', 'СТО', 'Орендар', 'Продавець', 'Лізингодавець', 
     'Банк', 'Покупець', 'Послуги', 'Державні установи'
 ]
+
+def create_rental_payment_notification(vehicle, contractor, amount, last_payment_date):
+    """Создает уведомление о следующем арендном платеже"""
+    # Следующий платеж через неделю после последнего
+    next_payment_date = last_payment_date + timedelta(days=7)
+    
+    # Проверяем, что дата уведомления не в прошлом
+    today = datetime.now().date()
+    if next_payment_date >= today:
+        notification = Notification(
+            type='rental_payment',
+            title=f'Нагадування про орендний платіж',
+            message=f'Сьогодні має бути черговий платіж за оренду {vehicle.brand} {vehicle.model} ({vehicle.license_plate}) від {contractor.name}. Сума: {amount:,.2f} ₴',
+            vehicle_id=vehicle.id,
+            contractor_id=contractor.id,
+            due_date=next_payment_date,
+            amount=amount
+        )
+        db.session.add(notification)
+        db.session.commit()
+
+def create_insurance_notification(vehicle, insurance_date):
+    """Создает уведомление о страховке за 7 дней до окончания"""
+    # Уведомление за 7 дней до окончания страховки
+    reminder_date = insurance_date - timedelta(days=7)
+    
+    notification = Notification(
+        type='insurance',
+        title=f'Нагадування про страховку',
+        message=f'Страховка для {vehicle.brand} {vehicle.model} ({vehicle.license_plate}) закінчується через 7 днів ({insurance_date.strftime("%d.%m.%Y")})',
+        vehicle_id=vehicle.id,
+        due_date=reminder_date,
+        amount=0
+    )
+    db.session.add(notification)
+    db.session.commit()
+
+def check_and_create_notifications():
+    """Проверяет и создает уведомления"""
+    today = datetime.now().date()
+    
+    # Проверяем арендные платежи
+    rental_events = EventJournal.query.filter_by(
+        event_type='надходження',
+        subtype='ОРЕНДА'
+    ).all()
+    
+    for event in rental_events:
+        if event.vehicle and event.contractor:
+            # Вычисляем дату следующего платежа (через неделю после последнего)
+            last_payment_date = event.date.date()
+            next_payment_date = last_payment_date + timedelta(days=7)
+            
+            # Проверяем, есть ли уже уведомление на эту дату
+            existing_notification = Notification.query.filter_by(
+                type='rental_payment',
+                vehicle_id=event.vehicle.id,
+                contractor_id=event.contractor.id,
+                due_date=next_payment_date
+            ).first()
+            
+            if not existing_notification and next_payment_date >= today:
+                # Создаем уведомление о следующем платеже
+                create_rental_payment_notification(
+                    event.vehicle, 
+                    event.contractor, 
+                    event.amount, 
+                    last_payment_date
+                )
+    
+    # Проверяем страховки (здесь нужно будет добавить логику для отслеживания дат страховки)
+    # Пока создаем тестовые уведомления
 
 # Маршруты
 @app.route('/')
@@ -334,12 +438,16 @@ def dashboard():
     # Последние события
     latest_events = EventJournal.query.join(Vehicle).order_by(EventJournal.date.desc()).limit(5).all()
     
+    # Непрочитанные уведомления
+    unread_notifications = Notification.query.filter_by(is_read=False).count()
+    
     return render_template('dashboard.html', 
                          vehicles=vehicles,
                          recent_events=recent_events,
                          total_vehicles=total_vehicles,
                          active_vehicles=active_vehicles,
-                         latest_events=latest_events)
+                         latest_events=latest_events,
+                         unread_notifications=unread_notifications)
 
 @app.route('/vehicles')
 @login_required
@@ -445,6 +553,30 @@ def add_event():
         if amount > 0:
             try:
                 update_cashflow_from_event(event_date, request.form['event_type'], request.form['subtype'], amount)
+                
+                # Если это арендный платеж, создаем уведомление о следующем платеже
+                if request.form['event_type'] == 'надходження' and request.form['subtype'] == 'ОРЕНДА':
+                    vehicle = Vehicle.query.get(int(request.form['vehicle_id'])) if request.form['vehicle_id'] else None
+                    contractor = Contractor.query.get(int(request.form['contractor_id'])) if request.form['contractor_id'] else None
+                    
+                    if vehicle and contractor:
+                        # Проверяем, есть ли уже уведомление на следующую неделю
+                        next_payment_date = event_date.date() + timedelta(days=7)
+                        existing_notification = Notification.query.filter_by(
+                            type='rental_payment',
+                            vehicle_id=vehicle.id,
+                            contractor_id=contractor.id,
+                            due_date=next_payment_date
+                        ).first()
+                        
+                        if not existing_notification:
+                            create_rental_payment_notification(
+                                vehicle, 
+                                contractor, 
+                                amount, 
+                                event_date.date()
+                            )
+                
                 flash('Подію додано та оновлено грошовий потік', 'success')
             except Exception as e:
                 flash(f'Подію додано, але помилка при оновленні грошового потоку: {str(e)}', 'warning')
@@ -559,6 +691,84 @@ def add_cashflow():
     
     return render_template('add_cashflow.html')
 
+@app.route('/notifications')
+@login_required
+def notifications():
+    """Страница входящих уведомлений"""
+    # Проверяем и создаем новые уведомления
+    check_and_create_notifications()
+    
+    # Получаем все уведомления, отсортированные: непроведенные вверху, проведенные внизу
+    notifications_list = Notification.query.order_by(
+        Notification.is_processed.asc(),  # Сначала непроведенные (False)
+        Notification.created_at.desc()    # Затем по дате создания
+    ).all()
+    
+    return render_template('notifications.html', notifications=notifications_list)
+
+@app.route('/notifications/mark_read/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """Отмечает уведомление как прочитанное"""
+    notification = Notification.query.get_or_404(notification_id)
+    notification.is_read = True
+    db.session.commit()
+    return redirect(url_for('notifications'))
+
+@app.route('/notifications/process_payment/<int:notification_id>', methods=['POST'])
+@login_required
+def process_payment_notification(notification_id):
+    """Обрабатывает уведомление о платеже - создает событие и обновляет кешфлоу"""
+    notification = Notification.query.get_or_404(notification_id)
+    
+    if notification.type == 'rental_payment' and notification.vehicle and notification.contractor:
+        # Создаем событие о получении арендного платежа
+        event = EventJournal(
+            date=datetime.now(),
+            event_type='надходження',
+            subtype='ОРЕНДА',
+            vehicle_id=notification.vehicle.id,
+            contractor_id=notification.contractor.id,
+            amount=notification.amount,
+            description=f'Орендний платіж від {notification.contractor.name}',
+            created_by=current_user.id
+        )
+        db.session.add(event)
+        
+        # Обновляем денежный поток
+        update_cashflow_from_event(
+            event.date, 
+            event.event_type, 
+            event.subtype, 
+            event.amount
+        )
+        
+        # Создаем уведомление о следующем платеже только если его еще нет
+        next_payment_date = datetime.now().date() + timedelta(days=7)
+        existing_next_notification = Notification.query.filter_by(
+            type='rental_payment',
+            vehicle_id=notification.vehicle.id,
+            contractor_id=notification.contractor.id,
+            due_date=next_payment_date
+        ).first()
+        
+        if not existing_next_notification:
+            create_rental_payment_notification(
+                notification.vehicle,
+                notification.contractor,
+                notification.amount,
+                datetime.now().date()
+            )
+        
+        # Отмечаем текущее уведомление как обработанное
+        notification.is_processed = True
+        notification.is_read = True
+        
+        db.session.commit()
+        flash('Платіж проведено успішно!', 'success')
+    
+    return redirect(url_for('notifications'))
+
 @app.route('/documents')
 @login_required
 def documents():
@@ -604,7 +814,7 @@ def generate_vehicles_report(vehicles):
             str(vehicle.year),
             vehicle.license_plate,
             f"{vehicle.mileage:,} км",
-            f"{vehicle.cost:,.2f} ₽",
+            f"{vehicle.cost:,.2f} ₴",
             vehicle.status
         ])
     
@@ -650,7 +860,7 @@ def generate_events_report(events):
             event.subtype,
             event.vehicle.call_sign if event.vehicle else '-',
             event.contractor.name if event.contractor else '-',
-            f"{event.amount:,.2f} ₽",
+            f"{event.amount:,.2f} ₴",
             event.description[:50] + '...' if event.description and len(event.description) > 50 else event.description or '-'
         ])
     
@@ -692,11 +902,11 @@ def generate_cashflow_report(cashflow_entries):
     for entry in cashflow_entries:
         data.append([
             entry.date.strftime('%d.%m.%Y'),
-            f"{entry.income:,.2f} ₽",
-            f"{entry.expenses:,.2f} ₽",
-            f"{entry.credit_load:,.2f} ₽",
-            f"{entry.balance:,.2f} ₽"
-        ])
+             f"{entry.income:,.2f} ₴",
+             f"{entry.expenses:,.2f} ₴",
+             f"{entry.credit_load:,.2f} ₴",
+             f"{entry.balance:,.2f} ₴"
+         ])
     
     table = Table(data)
     table.setStyle(TableStyle([

@@ -4,157 +4,261 @@
 {% block page_title %}Журнал подій{% endblock %}
 
 {% block main_content %}
-<div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">
-            <i class="fas fa-calendar-alt me-2"></i>Журнал подій
-        </h6>
-        <a href="{{ url_for('add_event') }}" class="btn btn-primary">
+<div class="container-fluid">
+    <!-- Заголовок страницы -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar-alt me-2 text-primary"></i>Журнал подій
+        </h1>
+        <a href="{{ url_for('add_event') }}" class="btn btn-primary btn-sm">
             <i class="fas fa-plus me-2"></i>Додати подію
         </a>
     </div>
-    <div class="card-body">
-        {% if events %}
-            <div class="table-responsive">
-                <table class="table table-bordered" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Тип</th>
-                            <th>Підтип</th>
-                            <th>ТЗ</th>
-                            <th>Контрагент</th>
-                            <th>Сума</th>
-                            <th>Опис</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for event in events %}
-                        <tr>
-                            <td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td>
-                            <td>
-                                <span class="badge bg-primary">{{ event.event_type }}</span>
-                            </td>
-                            <td>{{ event.subtype }}</td>
-                            <td>
-                                {% if event.vehicle %}
-                                    <strong>{{ event.vehicle.call_sign }}</strong>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if event.contractor %}
-                                    {{ event.contractor.name }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if event.amount > 0 %}
-                                    <span class="text-success fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
-                                {% elif event.amount < 0 %}
-                                    <span class="text-danger fw-bold">{{ "%.2f"|format(event.amount) }} ₴</span>
-                                {% else %}
-                                    <span class="text-muted">0.00 ₴</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if event.description %}
-                                    {{ event.description[:50] }}{% if event.description|length > 50 %}...{% endif %}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                            data-bs-toggle="modal" data-bs-target="#eventModal{{ event.id }}">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <a href="#" class="btn btn-sm btn-outline-warning">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        
-                        <!-- Modal для детальной информации -->
-                        <div class="modal fade" id="eventModal{{ event.id }}" tabindex="-1">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Событие: {{ event.event_type }} - {{ event.subtype }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6>Основная информация</h6>
-                                                <table class="table table-sm">
-                                                    <tr><td><strong>Дата:</strong></td><td>{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td></tr>
-                                                    <tr><td><strong>Тип:</strong></td><td>{{ event.event_type }}</td></tr>
-                                                    <tr><td><strong>Подтип:</strong></td><td>{{ event.subtype }}</td></tr>
-                                                    <tr><td><strong>Сумма:</strong></td><td>{{ "%.2f"|format(event.amount) }} ₽</td></tr>
-                                                </table>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <h6>Связанные объекты</h6>
-                                                <table class="table table-sm">
-                                                    <tr><td><strong>ТС:</strong></td>
-                                                        <td>
-                                                            {% if event.vehicle %}
-                                                                {{ event.vehicle.call_sign }} ({{ event.vehicle.brand }} {{ event.vehicle.model }})
-                                                            {% else %}
-                                                                <span class="text-muted">Не указано</span>
-                                                            {% endif %}
-                                                        </td>
-                                                    </tr>
-                                                    <tr><td><strong>Контрагент:</strong></td>
-                                                        <td>
-                                                            {% if event.contractor %}
-                                                                {{ event.contractor.name }} ({{ event.contractor.contractor_type }})
-                                                            {% else %}
-                                                                <span class="text-muted">Не указано</span>
-                                                            {% endif %}
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        {% if event.description %}
-                                        <div class="row mt-3">
-                                            <div class="col-12">
-                                                <h6>Описание</h6>
-                                                <p>{{ event.description }}</p>
-                                            </div>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+    {% if events %}
+        <!-- Фильтры и поиск -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-filter me-2"></i>Фільтри та пошук
+                </h6>
             </div>
-        {% else %}
-            <div class="text-center py-4">
-                <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Нет событий</h5>
-                <p class="text-muted">Добавьте первое событие для начала работы</p>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Пошук по опису...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="typeFilter">
+                            <option value="">Всі типи</option>
+                            <option value="надходження">Надходження</option>
+                            <option value="видатки">Видатки</option>
+                            <option value="інвестиції">Інвестиції</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="amountFilter">
+                            <option value="">Всі суми</option>
+                            <option value="positive">Позитивні</option>
+                            <option value="negative">Негативні</option>
+                            <option value="zero">Нульові</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i>Очистити
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица событий -->
+        <div class="card shadow mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="eventsTable">
+                        <thead class="bg-primary text-white">
+                            <tr>
+                                <th class="border-0">Дата</th>
+                                <th class="border-0">Тип</th>
+                                <th class="border-0">Підтип</th>
+                                <th class="border-0">Опис</th>
+                                <th class="border-0">Транспортний засіб</th>
+                                <th class="border-0">Контрагент</th>
+                                <th class="border-0">Сума</th>
+                                <th class="border-0">Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr class="event-row" 
+                                data-type="{{ event.event_type|lower }}" 
+                                data-amount="{{ event.amount }}"
+                                data-description="{{ event.description|lower }}">
+                                <td class="align-middle">{{ event.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td class="align-middle">
+                                    <span class="badge {% if event.event_type == 'надходження' %}bg-success{% elif event.event_type == 'видатки' %}bg-danger{% else %}bg-warning{% endif %} rounded-pill">
+                                        {{ event.event_type.upper() }}
+                                    </span>
+                                </td>
+                                <td class="align-middle">{{ event.subtype }}</td>
+                                <td class="align-middle">{{ event.description }}</td>
+                                <td class="align-middle">
+                                    {% if event.vehicle %}
+                                        <span class="badge bg-info rounded-pill">{{ event.vehicle.call_sign }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">{{ event.contractor.name if event.contractor else '-' }}</td>
+                                <td class="align-middle">
+                                    <span class="fw-bold {% if event.amount > 0 %}text-success{% elif event.amount < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                        {% if event.amount > 0 %}+{% endif %}{{ "{:,.2f}".format(event.amount) }} ₴
+                                    </span>
+                                </td>
+                                <td class="align-middle">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" data-bs-target="#eventModal{{ event.id }}">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-warning" disabled>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteEvent({{ event.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Подій не знайдено</h5>
+                <p class="text-muted">Додайте першу подію, щоб почати вести журнал</p>
                 <a href="{{ url_for('add_event') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Добавить событие
+                    <i class="fas fa-plus me-2"></i>Додати подію
                 </a>
             </div>
-        {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Модальные окна для детальной информации -->
+{% for event in events %}
+<div class="modal fade" id="eventModal{{ event.id }}" tabindex="-1" aria-labelledby="eventModalLabel{{ event.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventModalLabel{{ event.id }}">
+                    <i class="fas fa-calendar-alt me-2"></i>Деталі події
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Основна інформація</h6>
+                        <p><strong>Дата:</strong> {{ event.date.strftime('%d.%m.%Y %H:%M') }}</p>
+                        <p><strong>Тип:</strong> 
+                            <span class="badge {% if event.event_type == 'надходження' %}bg-success{% elif event.event_type == 'видатки' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ event.event_type.upper() }}
+                            </span>
+                        </p>
+                        <p><strong>Підтип:</strong> {{ event.subtype }}</p>
+                        <p><strong>Сума:</strong> 
+                            <span class="fw-bold {% if event.amount > 0 %}text-success{% elif event.amount < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                {% if event.amount > 0 %}+{% endif %}{{ "{:,.2f}".format(event.amount) }} ₴
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Деталі</h6>
+                        {% if event.vehicle %}
+                        <p><strong>Транспортний засіб:</strong> 
+                            <span class="badge bg-info">{{ event.vehicle.call_sign }}</span>
+                        </p>
+                        <p><strong>Марка/Модель:</strong> {{ event.vehicle.brand }} {{ event.vehicle.model }}</p>
+                        <p><strong>Державний номер:</strong> {{ event.vehicle.license_plate }}</p>
+                        {% endif %}
+                        {% if event.contractor %}
+                        <p><strong>Контрагент:</strong> {{ event.contractor.name }}</p>
+                        <p><strong>Тип контрагента:</strong> {{ event.contractor.contractor_type }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if event.description %}
+                <div class="mt-3">
+                    <h6 class="text-primary">Опис</h6>
+                    <p class="text-muted">{{ event.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+                                 <button type="button" class="btn btn-warning" disabled>
+                     <i class="fas fa-edit me-2"></i>Редагувати
+                 </button>
+            </div>
+        </div>
     </div>
 </div>
+{% endfor %}
+
+<!-- Форма для удаления -->
+<form id="deleteEventForm" method="POST" style="display: none;">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const typeFilter = document.getElementById('typeFilter');
+    const amountFilter = document.getElementById('amountFilter');
+    const eventRows = document.querySelectorAll('.event-row');
+
+    function filterEvents() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedType = typeFilter.value.toLowerCase();
+        const selectedAmount = amountFilter.value;
+
+        eventRows.forEach(row => {
+            const type = row.dataset.type;
+            const amount = parseFloat(row.dataset.amount);
+            const description = row.dataset.description;
+            
+            let showRow = true;
+
+            // Поиск по описанию
+            if (searchTerm && !description.includes(searchTerm)) {
+                showRow = false;
+            }
+
+            // Фильтр по типу
+            if (selectedType && type !== selectedType) {
+                showRow = false;
+            }
+
+            // Фильтр по сумме
+            if (selectedAmount) {
+                if (selectedAmount === 'positive' && amount <= 0) showRow = false;
+                if (selectedAmount === 'negative' && amount >= 0) showRow = false;
+                if (selectedAmount === 'zero' && amount !== 0) showRow = false;
+            }
+
+            row.style.display = showRow ? 'table-row' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('input', filterEvents);
+    typeFilter.addEventListener('change', filterEvents);
+    amountFilter.addEventListener('change', filterEvents);
+});
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('amountFilter').value = '';
+    
+    document.querySelectorAll('.event-row').forEach(row => {
+        row.style.display = 'table-row';
+    });
+}
+
+function deleteEvent(eventId) {
+    if (confirm('Ви впевнені, що хочете видалити цю подію?')) {
+        const form = document.getElementById('deleteEventForm');
+        form.action = `/events/delete/${eventId}`;
+        form.submit();
+    }
+}
+</script>
 {% endblock %} 
