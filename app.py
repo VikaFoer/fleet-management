@@ -47,44 +47,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Автоматическая инициализация базы данных
-def init_database():
-    with app.app_context():
-        try:
-            print("🗄️ Создаем таблицы базы данных...")
-            db.create_all()
-            print("✅ Таблицы созданы успешно")
-            
-            # Создаем администратора по умолчанию
-            print("👤 Проверяем администратора...")
-            admin = User.query.filter_by(username='admin').first()
-            if not admin:
-                admin = User(
-                    username='admin',
-                    email='admin@fleet.com',
-                    password_hash=generate_password_hash('admin123'),
-                    role='admin'
-                )
-                db.session.add(admin)
-                db.session.commit()
-                print("✅ Администратор создан: admin/admin123")
-            else:
-                print("ℹ️ Администратор уже существует")
-                
-            print("🎉 База данных инициализирована успешно!")
-            
-        except Exception as e:
-            print(f"❌ Ошибка инициализации БД: {e}")
-            db.session.rollback()
-            # Не прерываем работу приложения при ошибке БД
-
 # Флаг для отслеживания инициализации БД
 db_initialized = False
-
-# Инициализируем БД при запуске (только если это не Railway)
-if not os.getenv('RAILWAY_ENVIRONMENT'):
-    init_database()
-    db_initialized = True
 
 # Модели данных
 class User(UserMixin, db.Model):
@@ -147,6 +111,42 @@ class EventJournal(db.Model):
     vehicle = db.relationship('Vehicle', backref='events')
     contractor = db.relationship('Contractor', backref='events')
     user = db.relationship('User', backref='events')
+
+# Автоматическая инициализация базы данных
+def init_database():
+    with app.app_context():
+        try:
+            print("🗄️ Создаем таблицы базы данных...")
+            db.create_all()
+            print("✅ Таблицы созданы успешно")
+            
+            # Создаем администратора по умолчанию
+            print("👤 Проверяем администратора...")
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@fleet.com',
+                    password_hash=generate_password_hash('admin123'),
+                    role='admin'
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Администратор создан: admin/admin123")
+            else:
+                print("ℹ️ Администратор уже существует")
+                
+            print("🎉 База данных инициализирована успешно!")
+            
+        except Exception as e:
+            print(f"❌ Ошибка инициализации БД: {e}")
+            db.session.rollback()
+            # Не прерываем работу приложения при ошибке БД
+
+# Инициализируем БД при запуске (только если это не Railway)
+if not os.getenv('RAILWAY_ENVIRONMENT'):
+    init_database()
+    db_initialized = True
 
 @login_manager.user_loader
 def load_user(user_id):
