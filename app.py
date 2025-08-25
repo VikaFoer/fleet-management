@@ -49,7 +49,6 @@ login_manager.login_view = 'login'
 
 # Флаг для отслеживания инициализации БД
 db_initialized = False
-
 # Модели данных
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -291,6 +290,18 @@ def login():
         try:
             username = request.form['username']
             password = request.form['password']
+            
+            # Проверяем, инициализирована ли БД
+            if not db_initialized:
+                try:
+                    init_database()
+                    global db_initialized
+                    db_initialized = True
+                except Exception as e:
+                    print(f"Ошибка инициализации БД: {e}")
+                    flash('Помилка ініціалізації бази даних. Спробуйте пізніше.', 'error')
+                    return render_template('login.html')
+            
             user = User.query.filter_by(username=username).first()
             
             if user and check_password_hash(user.password_hash, password):
