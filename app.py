@@ -292,10 +292,10 @@ def login():
             password = request.form['password']
             
             # Проверяем, инициализирована ли БД
+            global db_initialized
             if not db_initialized:
                 try:
                     init_database()
-                    global db_initialized
                     db_initialized = True
                 except Exception as e:
                     print(f"Ошибка инициализации БД: {e}")
