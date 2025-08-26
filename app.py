@@ -12,6 +12,8 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 import io
 import json
+import time
+from werkzeug.utils import secure_filename
 
 load_dotenv()
 
@@ -41,6 +43,15 @@ else:
 
 print(f"Final Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Настройки для загрузки файлов
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB максимум
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -74,6 +85,7 @@ class Vehicle(db.Model):
     payback_weeks = db.Column(db.Integer)  # Недель до окупаемости
     payment_history = db.Column(db.Text)  # История платежей (из журнала событий)
     status = db.Column(db.String(20), default='active')
+    photo_filename = db.Column(db.String(255))  # Имя файла фото
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class CashFlow(db.Model):
@@ -499,6 +511,23 @@ def add_vehicle():
             )
             print(f"DEBUG: Vehicle object created, adding to session...")
             db.session.add(vehicle)
+            db.session.flush()  # Получаем ID автомобиля
+            
+            # Обрабатываем загруженное фото
+            if 'photo' in request.files and request.files['photo'].filename:
+                photo = request.files['photo']
+                if photo and allowed_file(photo.filename):
+                    # Генерируем уникальное имя файла
+                    filename = secure_filename(f"vehicle_{vehicle.id}_{int(time.time())}_{photo.filename}")
+                    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    
+                    # Создаем папку если её нет
+                    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                    
+                    # Сохраняем файл
+                    photo.save(photo_path)
+                    vehicle.photo_filename = filename
+            
             print(f"DEBUG: Committing to database...")
             db.session.commit()
             print(f"DEBUG: Successfully committed!")
@@ -511,6 +540,17 @@ def add_vehicle():
             return render_template('add_vehicle.html')
     
     return render_template('add_vehicle.html')
+
+@app.route('/vehicles/photo/<int:vehicle_id>')
+@login_required
+def vehicle_photo(vehicle_id):
+    """Отдает фото автомобиля"""
+    vehicle = Vehicle.query.get_or_404(vehicle_id)
+    if vehicle.photo_filename:
+        photo_path = os.path.join(app.config['UPLOAD_FOLDER'], vehicle.photo_filename)
+        if os.path.exists(photo_path):
+            return send_file(photo_path)
+    return '', 404
 
 @app.route('/events')
 @login_required

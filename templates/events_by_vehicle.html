@@ -36,42 +36,55 @@
             </div>
             <div class="col-md-6">
                 <h6 class="text-primary">Статистика</h6>
-                <div class="row">
-                    <div class="col-6">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body text-center">
-                                <h4>{{ events|length }}</h4>
-                                <small>Всього подій</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="card bg-success text-white">
-                            <div class="card-body text-center">
-                                <h4>{{ "%.2f"|format(events|selectattr('amount', 'gt', 0)|sum(attribute='amount')) }} ₴</h4>
-                                <small>Загальна сума</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <div class="card bg-warning text-white">
-                            <div class="card-body text-center">
-                                <h4>{{ events|selectattr('event_type', 'equalto', 'видатки')|list|length }}</h4>
-                                <small>Видатки</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="card bg-info text-white">
-                            <div class="card-body text-center">
-                                <h4>{{ events|selectattr('event_type', 'equalto', 'надходження')|list|length }}</h4>
-                                <small>Надходження</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                 <div class="row">
+                     <div class="col-6">
+                         <div class="card bg-primary text-white">
+                             <div class="card-body text-center">
+                                 {% set vehicle_cost = vehicle.cost %}
+                                 {% set investments = events|selectattr('event_type', 'equalto', 'інвестиції')|sum(attribute='amount') %}
+                                 {% set expenses = events|selectattr('event_type', 'equalto', 'видатки')|sum(attribute='amount') %}
+                                 {% set total_cost = vehicle_cost + investments + expenses %}
+                                 <h4>{{ "%.2f"|format(total_cost) }} ₴</h4>
+                                 <small>Общая стоимость авто</small>
+                             </div>
+                         </div>
+                     </div>
+                     <div class="col-6">
+                         <div class="card bg-success text-white">
+                             <div class="card-body text-center">
+                                 <h4>{{ "%.2f"|format(events|selectattr('event_type', 'equalto', 'надходження')|sum(attribute='amount')) }} ₴</h4>
+                                 <small>Доход в гривнах</small>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                 <div class="row mt-2">
+                     <div class="col-6">
+                         <div class="card bg-info text-white">
+                             <div class="card-body text-center">
+                                 {% set income = events|selectattr('event_type', 'equalto', 'надходження')|sum(attribute='amount') %}
+                                 {% set total_cost = vehicle_cost + investments + expenses %}
+                                 {% set balance = income - total_cost %}
+                                 {% set last_rental = events|selectattr('subtype', 'equalto', 'ОРЕНДА')|list|last %}
+                                 {% if last_rental and last_rental.amount > 0 %}
+                                     {% set weeks_to_payback = (balance / last_rental.amount)|round(1) %}
+                                     <h4>{{ weeks_to_payback }}</h4>
+                                 {% else %}
+                                     <h4>-</h4>
+                                 {% endif %}
+                                 <small>Недель до окупаемости</small>
+                             </div>
+                         </div>
+                     </div>
+                     <div class="col-6">
+                         <div class="card bg-warning text-white">
+                             <div class="card-body text-center">
+                                 <h4>{{ "%.2f"|format(income - total_cost) }} ₴</h4>
+                                 <small>Сальдо</small>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
             </div>
         </div>
 
